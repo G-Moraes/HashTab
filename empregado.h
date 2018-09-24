@@ -30,6 +30,6 @@ int removeCliente(int codigo);
 int insereCliente(Cliente* clt);
 void criaTeste(FILE* clientes);
 void desfazLigacoes(FILE* clientes);
-void percorreLista(int indiceHash, int indiceCliente, FILE* clientes);
+void percorreListaAdd(int indiceHash, int indiceCliente, FILE* clientes);
 
 #endif /* Cliente_H */
