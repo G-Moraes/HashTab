@@ -8,11 +8,18 @@ int main ()
 	int opcao;
 
 	printf("Bem-vindo ao trabalho. O que deseja?\n\n");	
-	printf("1: Criar arquivo base clientes e hash\n2: imprimir arquivo clientes\n3: imprimir tabela hash\n");
+	printf("0: Criar arquivos vazios\n1: Criar arquivo base clientes e hash\n2: imprimir arquivo clientes\n3: imprimir tabela hash\n");
 	printf("4: Inserir cliente\n5: Remover clientes\n6: Desfazer ligações dos clientes e refazer tabela hash\n7: Aplicar o encadeamento exterior\n\n");
 	scanf("%d", &opcao);
 	printf("\n");
-	if(opcao == 1){
+	
+	if(opcao == 0){
+		
+		FILE* clientes = fopen("clientes.dat", "w+b");
+    	setHash();
+	}
+
+	else if(opcao == 1){
 
 		FILE* clientes = fopen("clientes.dat", "w+b");
 		criaTeste(clientes);

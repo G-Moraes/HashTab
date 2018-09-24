@@ -62,7 +62,6 @@ void imprimeCliente(Cliente* e)
 
 }
 
-
 int contaRegistros(FILE* arq)
 {
     rewind(arq);
@@ -138,7 +137,7 @@ void imprimeHash(){
     rewind(hash);
 }
 
-//função para fazer a ligação de um cliente novo com a tabela hash DEU MERDA
+//função para fazer a ligação de um cliente novo com a tabela hash
 void encadeamentoExterior(FILE* clientes, FILE *hash){
 
     rewind(clientes);
@@ -184,6 +183,7 @@ void encadeamentoExterior(FILE* clientes, FILE *hash){
     imprimeHash();
 }
 
+//função auxiliar para linkar os clientes entre si
 void setaProximo(int indice, int posicao, FILE* clientes){  //indice: posicao do atual; posicao: posicao do futuro anterior
 
     fseek(clientes, (sizeof(Cliente) * posicao), SEEK_SET); //procuro o cliente na tabela CLIENTES (seto o ponteiro pra onde está o cliente)
@@ -212,17 +212,17 @@ void setaProximo(int indice, int posicao, FILE* clientes){  //indice: posicao do
 
 }
 
-//função para remover um cliente existente
+//função para remover um cliente existente REFAZER
 int removeCliente(int codigo){
 
 	FILE* clientes = fopen("clientes.dat", "r+b");
     FILE* hash = fopen("tabHash.dat", "r+b");
-	Cliente* auxiliar;
-	int tamanho = contaRegistros(clientes);
-	int aux;
-    int sub = -1;
-    int i, j;
-    int proximo;
+	Cliente* auxiliar; //
+	int tamanho = contaRegistros(clientes); 
+	int aux; //será o valor que eu vou usar pra ler a hash
+    int sub = -1; //valor pra substituição na hash
+    int i, j; //indices
+    int proximo; //valor que o cliente vai apontar
 
 	rewind(clientes);
 
@@ -232,54 +232,196 @@ int removeCliente(int codigo){
 
 		if(auxiliar->codigo == codigo && auxiliar->liberado == 0){ //se o cliente é o que eu procuro
 
-			auxiliar->liberado = 1;
-			proximo = auxiliar->prox;
-			fseek(clientes, sizeof(Cliente) * i, SEEK_SET);
-			fwrite(auxiliar, sizeof(Cliente), 1, clientes);
+			auxiliar->liberado = 1; //altero o valor de status dele na memória			proximo = auxiliar->prox; //guardo o valor que ele apontava
+			fseek(clientes, sizeof(Cliente) * i, SEEK_SET); //recoloco o cursor no cliente excluido
+			fwrite(auxiliar, sizeof(Cliente), 1, clientes); //reescrevo o cliente no arquivo
 			printf("Cliente removido!\n\n");
-            rewind(clientes);
+            rewind(clientes); //dou rewind no arquivo
 
+           	for(j = 0; j < 7; j++){ //for que percorre a hash
+           		
+           		fread(&aux, sizeof(int), 1, hash);  //leio os valores da hash
 
-
-           	for(j = 0; j < 7; j++){
-           		fread(&aux, sizeof(int), 1, hash);
-
-           		if(aux == i){
-           			fseek(hash, sizeof(int) * j, SEEK_SET);
-           			fwrite(&sub, sizeof(int), 1, hash);
+           		if(aux == i){ //se eu encontrei o cliente recém removido na hash
+           			fseek(hash, sizeof(int) * j, SEEK_SET); //recoloco o cursor onde eu encontrei
+           			fwrite(&sub, sizeof(int), 1, hash); //sobrescrevo o valor como -1
            		}
            	}
 
-           	Cliente* koichi;
+           	Cliente* koichi; //cliente auxiliar 2
 
-           	for(j = 0; j < tamanho; j++){
+           	for(j = 0; j < tamanho; j++){ //for para substituir os ponteiros
 
-           		koichi = leCliente(clientes);
+           		koichi = leCliente(clientes); //releio os clientes
 
-           		if(koichi->prox == i){
+           		if(koichi->prox == i){ //se o cliente que eu li aponta pro cliente recém excluido
 
-           			koichi->prox = proximo;
-           			fseek(clientes, sizeof(Cliente) * j, SEEK_SET);
-           			fwrite(koichi, sizeof(Cliente), 1, clientes);
+           			koichi->prox = proximo; //o cliente aponta para onde o recém excluido apontava
+           			fseek(clientes, sizeof(Cliente) * j, SEEK_SET); //atualizo o cursor
+           			fwrite(koichi, sizeof(Cliente), 1, clientes); //sobrescrevo no arquivo o cliente
            		}
            	}
 
-
-			return 1;
+			return 1; //retorno 1 só para indicar que removi com sucesso um cliente
 		}
 	}
 
+	//se o código saiu do for, quer dizer que não foi possível achar o cliente pela chave
     printf("Cliente a remover inexistente!\n");
 	return 0;
 }
 
-//função para inserir um cliente novo (opção 2, sempre checando buracos na tabela)
+//função para inserir um cliente novo (opção 2, sempre checando buracos na tabela) TERMINAR
 int insereCliente(Cliente* clt){
 
 	FILE* clientes = fopen("clientes.dat", "r+b");
 	FILE* hash = fopen("tabHash.dat", "r+b");
 
-	Cliente* aux;
+    int chave = funcHash(clt);
+    int i;
+    int leituraHash;
+    int n = contaRegistros(clientes);
+    int guarda;
+    rewind(clientes);
+    Cliente* aux;
+
+    if(n == 0){ //se não existem clientes
+
+        fwrite(clt, sizeof(Cliente), 1, clientes);
+        fseek(hash, sizeof(int) * 0, SEEK_SET);
+        fwrite(&n, sizeof(int), 1, hash);
+        printf("Primeiro cliente inserido na tabela!\n\nCliente 0:\n");
+        imprimeCliente(clt);
+        return 1;
+    }
+
+    fseek(hash, sizeof(int) * chave, SEEK_SET);
+    fread(&leituraHash, sizeof(int), 1, hash);
+
+    for(i = 0; i < n; i++){  //para garantir que não existam clientes com o mesmo código
+        
+        aux = leCliente(clientes);
+        
+        if(aux->codigo == clt->codigo && aux->liberado == 0){
+            printf("Cliente com o mesmo código existente! Considere alterar o código.\n");
+            return 0;
+        }
+    }
+
+    rewind(clientes);
+
+    if(leituraHash == -1){ //se a posição da hash ta vazia
+        
+        for(i = 0; i < n; i++){
+
+            aux = leCliente(clientes); //leio os clientes
+            
+            if(aux->liberado == -1){ //quando encontrar a primeira posição livre na tabela
+
+                fseek(clientes, sizeof(Cliente) * i, SEEK_SET);
+                fwrite(&aux, sizeof(Cliente), 1, clientes);
+                fseek(hash, sizeof(int) * chave, SEEK_SET);
+                fwrite(&i, sizeof(int), 1, hash);
+                fseek(hash, sizeof(int) * chave, SEEK_SET);
+                fwrite(&i, sizeof(int), 1, hash); 
+                printf("Cliente inserido no meio da lista!\n\nCliente %d:\n", i);
+                imprimeCliente(clt);
+                rewind(clientes);
+                rewind(hash);
+                fclose(clientes);
+                fclose(hash);
+                return 1;
+            }
+        }
+
+        fwrite(&clt, sizeof(Cliente), 1, clientes); //se não encontrar um buraco na tabela, escrevo no fim
+        fseek(hash, sizeof(int) * chave, SEEK_SET);
+        fwrite(&n, sizeof(int), 1, hash);
+        printf("Cliente inserido no fim da lista!\n\nCliente %d:\n\n", n);
+        imprimeCliente(clt);
+        rewind(clientes);
+        rewind(hash);
+        fclose(clientes);
+        fclose(hash);
+        return 1;
+    }
+
+    else if(leituraHash >= 0){ //se tem algo na hash
+
+        fseek(clientes, sizeof(Cliente) * leituraHash, SEEK_SET);
+        aux = leCliente(clientes); //leio o cliente da hash
+        printf("problema aq1\n");
+        imprimeCliente(aux);
+        //printf("Li cliente\n");
+        rewind(clientes);
+
+        if(aux->prox == -1){ //se o próximo é vazio
+
+            for(i = 0; i < n; i++){ //procuro a próxima posição vazia na tabela
+
+                Cliente* okuyasu = leCliente(clientes);
+
+                if(okuyasu->liberado == 1){ //se eu achei um espaço vazio na tabela
+
+                    fseek(clientes, sizeof(Cliente) * i, SEEK_SET);
+                    fwrite(clt, sizeof(Cliente), 1, clientes); //escrevo o cliente que eu pretendo inserir
+
+                    aux->prox = i;//atualizo o ponteiro do cliente da hash para apontar pro cliente inserido
+                    fseek(clientes, sizeof(Cliente) * leituraHash, SEEK_SET);
+                    fwrite(aux, sizeof(Cliente), 1, clientes);
+                    printf("Cliente inserido!\n\nCliente %d:\n", i);
+                    imprimeCliente(clt);
+                    rewind(clientes);
+                    rewind(hash);
+                    fclose(clientes);
+                    fclose(hash);
+                    return 1;
+                }
+            }
+
+            //se eu saí do for, quer dizer que não tem buraco no arquivo clientes
+            fseek(clientes, sizeof(Cliente) * leituraHash, SEEK_SET);
+            aux->prox = i;
+            fwrite(aux, sizeof(Cliente), 1, clientes); //atualizo o ponteiro para próximo        
+            fseek(clientes, 0, SEEK_END); //fseek para o final da tabela
+            fwrite(clt, sizeof(Cliente), 1, clientes);
+            printf("Cliente inserido no fim do arquivo!\n\nCliente %d:\n", i);
+            imprimeCliente(clt);
+            rewind(clientes);
+            rewind(hash);
+            fclose(clientes);
+            fclose(hash);
+            return 1;
+        }
+
+        else{ //se o próximo não é vazio
+
+            for(i = 0; i < n; i++){
+
+                Cliente* reimi = leCliente(clientes);
+
+                if(reimi->liberado == 1){ //encontrando um buraco na lista
+
+                    fseek(clientes, sizeof(Cliente) * i, SEEK_SET);
+                    fwrite(clt, sizeof(Cliente), 1, clientes);
+                    rewind(clientes);
+                    percorreLista(leituraHash, i, clientes);
+                    printf("Cliente inserido!\n\nCliente %d:", i);
+                    imprimeCliente(clt);
+                    rewind(clientes);
+                    rewind(hash);
+                    fclose(clientes);
+                    fclose(hash);
+                }
+            }
+        }
+    }
+
+
+
+	/*Cliente* aux;
+
+
 	int tamanho = contaRegistros(clientes);
 	int i;
 	rewind(clientes);
@@ -307,6 +449,7 @@ int insereCliente(Cliente* clt){
 	printf("\nCliente inserido no fim da lista! Será necessário refazer o Encadeamento Exterior para atualizar sua lista.\n\n");
 
 	return 2;
+    */
 }
 
 //função pra criar a hash e o arquivo padrão do exemplo do ubiratam
@@ -350,3 +493,57 @@ void desfazLigacoes(FILE* clientes){
 
     rewind(clientes);
 }
+
+void percorreLista(int indiceHash, int indiceCliente, FILE* clientes){
+
+    Cliente* aux;
+
+    fseek(clientes, sizeof(Cliente) * indiceHash, SEEK_SET);
+    fread(&aux, sizeof(Cliente), 1, clientes);
+
+    if(aux->prox == -1){
+
+        aux->prox = indiceCliente;
+        fseek(clientes, sizeof(Cliente) * indiceHash, SEEK_SET);
+        fwrite(&aux, sizeof(Cliente), 1, clientes);
+    }
+
+    else
+        percorreLista(aux->prox, indiceCliente, clientes);
+}
+
+/*void retornaCliente(int código){
+
+    FILE* clientes = fopen("clientes.dat", "r+b");
+    FILE* hash = fopen("tabHash.dat", "r+b");
+
+    int chave = funcHash(código);
+    int indiceAux;
+    int i;
+    Cliente* cltAux;
+
+    fseek(hash, sizeof(int) * chave, SEEK_SET);
+    fwrite(&indiceAux, sizeof(int), 1, clientes);
+
+    if(indiceAux == -1){
+
+        printf("Cliente inexistente!\n");
+        return NULL;
+    }
+
+    else{
+
+        indiceAux = chave;
+        fseek(clientes, sizeof(Cliente) * indiceAux, SEEK_SET);
+        fread(cltAux, sizeof(Cliente), 1, clientes);
+        
+        if(cltAux->codigo == código){
+
+            return cltAux;
+        }
+
+        else
+    }
+
+
+}*/

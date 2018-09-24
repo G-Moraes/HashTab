@@ -26,9 +26,10 @@ FILE* setHash();
 void imprimeHash();
 void encadeamentoExterior(FILE* clientes, FILE *hash);
 void setaProximo(int indice, int posicao, FILE* clientes);
-int removeCliente(int indice);
+int removeCliente(int codigo);
 int insereCliente(Cliente* clt);
 void criaTeste(FILE* clientes);
 void desfazLigacoes(FILE* clientes);
+void percorreLista(int indiceHash, int indiceCliente, FILE* clientes);
 
 #endif /* Cliente_H */
