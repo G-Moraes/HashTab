@@ -138,7 +138,7 @@ void imprimeHash(){
 }
 
 //função para fazer a ligação de um cliente novo com a tabela hash
-void encadeamentoExterior(FILE* clientes, FILE *hash){
+/*void encadeamentoExterior(FILE* clientes, FILE *hash){
 
     rewind(clientes);
     rewind(hash);
@@ -181,10 +181,10 @@ void encadeamentoExterior(FILE* clientes, FILE *hash){
 
     imprimeArquivo(clientes);
     imprimeHash();
-}
+}*/
 
 //função auxiliar para linkar os clientes entre si
-void setaProximo(int indice, int posicao, FILE* clientes){  //indice: posicao do atual; posicao: posicao do futuro anterior
+/*void setaProximo(int indice, int posicao, FILE* clientes){  //indice: posicao do atual; posicao: posicao do futuro anterior
 
     fseek(clientes, (sizeof(Cliente) * posicao), SEEK_SET); //procuro o cliente na tabela CLIENTES (seto o ponteiro pra onde está o cliente)
     Cliente* kakyoin = leCliente(clientes); //utilizo um auxiliar para sobrescrever na tabela CLIENTES para colocar na lista
@@ -210,13 +210,45 @@ void setaProximo(int indice, int posicao, FILE* clientes){  //indice: posicao do
         exit(1);
     }
 
-}
+}*/
 
 //função para remover um cliente existente REFAZER
 int removeCliente(int codigo){
 
-	clientes = fopen("clientes.dat", "r+b");
+	FILE* clientes = fopen("clientes.dat", "r+b");
     FILE* hash = fopen("tabHash.dat", "r+b");
+
+    Cliente* teste = criaCliente(codigo, "Santana");
+    int chave = funcHash(teste);
+    int sub = -1;
+
+    fseek(hash, sizeof(int) * chave, SEEK_SET);
+    fread(&chave, sizeof(int), 1, hash);
+
+    if(chave == -1){ //se a posição na hash está vazia
+
+        printf("Cliente inexistente!\n");
+        return 0;
+    } 
+
+    else{ //se tem algo na hash
+
+        fseek(clientes, sizeof(Cliente) * chave, SEEK_SET);
+        teste = leCliente(clientes); //leio o cliente da hash
+
+        if(teste->codigo == codigo && teste->prox == -1){ //se ele não tem próximo
+
+            fseek(hash, sizeof(int) * chave, SEEK_SET);
+            fwrite(&sub, sizeof(int), 1, hash);
+        }
+
+        else{ //se não é o elemento que eu to procurando, ele está na lista
+
+            percorreListaDel(teste->prox, chave, codigo,  clientes);
+            return 1;
+        }
+    }
+
 
     
 
@@ -237,7 +269,8 @@ int removeCliente(int codigo){
 
 		if(auxiliar->codigo == codigo && auxiliar->liberado == 0){ //se o cliente é o que eu procuro
 
-			auxiliar->liberado = 1; //altero o valor de status dele na memória			proximo = auxiliar->prox; //guardo o valor que ele apontava
+			auxiliar->liberado = 1; //altero o valor de status dele na memória			
+            proximo = auxiliar->prox; //guardo o valor que ele apontava
 			fseek(clientes, sizeof(Cliente) * i, SEEK_SET); //recoloco o cursor no cliente excluido
 			fwrite(auxiliar, sizeof(Cliente), 1, clientes); //reescrevo o cliente no arquivo
 			printf("Cliente removido!\n\n");
@@ -275,6 +308,39 @@ int removeCliente(int codigo){
     printf("Cliente a remover inexistente!\n");
 	return 0;*/
 }
+
+void percorreListaDel(int next, int atual, int codigo, FILE* clientes){
+
+    Cliente* aux;
+
+    fseek(clientes, sizeof(Cliente) * next, SEEK_SET);
+    fwrite(aux, sizeof(Cliente), 1, clientes); //leio o próximo cliente
+
+    if(aux->codigo == codigo){ //encontrei o registro a ser excluido
+
+        aux->liberado == 1;
+        int temp = aux->prox;
+        aux->prox = -1;
+        fseek(clientes, sizeof(Cliente) * next, SEEK_SET);
+        fwrite(aux, sizeof(Cliente), 1, clientes); //removo o registro
+
+        fseek(clientes, sizeof(Cliente) * atual, SEEK_SET);
+        aux = leCliente(clientes);
+        aux->prox = temp;
+        fseek(clientes, sizeof(Cliente) * atual, SEEK_SET);
+        fwrite(aux, sizeof(Cliente), 1, clientes);
+    }
+
+    else if(aux->codigo != codigo && aux->prox == -1){
+        printf("Cliente inexistente!\n\n");
+        return;
+    }
+
+    else{
+        percorreListaDel(aux->prox, next, codigo, clientes);
+    }
+}
+
 
 //função para inserir um cliente novo (opção 2, sempre checando buracos na tabela) TERMINAR
 int insereCliente(Cliente* clt){
@@ -416,17 +482,20 @@ void percorreListaAdd(int indiceHash, int indiceCliente, FILE* clientes){
 
     fseek(clientes, sizeof(Cliente) * indiceHash, SEEK_SET);
     fread(aux, sizeof(Cliente), 1, clientes);
-    imprimeCliente(aux);
-
+    printf("entrei po\n\n");
+    printf("%d\n", indiceHash);
+    
     if(aux->prox == -1){
-    	printf("entrei aqui\n");
         aux->prox = indiceCliente;
         fseek(clientes, sizeof(Cliente) * indiceHash, SEEK_SET);
         fwrite(aux, sizeof(Cliente), 1, clientes);
+        return;
     }
 
     else{
-        percorreLista(aux->prox, indiceCliente, clientes);
+        
+        int valor = aux->prox;
+        percorreListaAdd(valor, indiceCliente, clientes);
     }
 }
 
@@ -449,61 +518,3 @@ void criaTeste(FILE* clientes){
 
     setHash();
 }
-
-void desfazLigacoes(FILE* clientes){
-
-    Cliente* iggy;
-    int n = contaRegistros(clientes);
-    int i;
-    int nulo = -1;
-    rewind(clientes);
-
-    for(i = 0; i < n; i++){
-
-        iggy = leCliente(clientes);
-        fseek(clientes, sizeof(Cliente) * i, SEEK_SET);
-        iggy->prox = nulo;
-        fwrite(&iggy->codigo, sizeof(int), 1, clientes); //reescrevo código
-        fwrite(iggy->nome, sizeof(char), sizeof(iggy->nome), clientes); //reescrevo nome
-        fwrite(&iggy->liberado, sizeof(int), 1, clientes); //reescrevo status
-        fwrite(&iggy->prox, sizeof(int), 1, clientes); //reescrevo o ponteiro (ÚNICO CAMPO QUE É REALMENTE ALTERADO)
-    }
-
-    rewind(clientes);
-}
-
-/*void retornaCliente(int código){
-
-    FILE* clientes = fopen("clientes.dat", "r+b");
-    FILE* hash = fopen("tabHash.dat", "r+b");
-
-    int chave = funcHash(código);
-    int indiceAux;
-    int i;
-    Cliente* cltAux;
-
-    fseek(hash, sizeof(int) * chave, SEEK_SET);
-    fwrite(&indiceAux, sizeof(int), 1, clientes);
-
-    if(indiceAux == -1){
-
-        printf("Cliente inexistente!\n");
-        return NULL;
-    }
-
-    else{
-
-        indiceAux = chave;
-        fseek(clientes, sizeof(Cliente) * indiceAux, SEEK_SET);
-        fread(cltAux, sizeof(Cliente), 1, clientes);
-        
-        if(cltAux->codigo == código){
-
-            return cltAux;
-        }
-
-        else
-    }
-
-
-}*/

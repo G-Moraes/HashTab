@@ -61,7 +61,7 @@ int main ()
 
 		FILE* clientes = fopen("clientes.dat", "r+b");
 
-		desfazLigacoes(clientes);
+		//desfazLigacoes(clientes);
 		setHash();
 
 		printf("Ligações desfeitas e tabela hash refeita.\n");
@@ -72,7 +72,7 @@ int main ()
 		FILE* clientes = fopen("clientes.dat", "r+b");
    		FILE* hash = fopen("tabHash.dat", "r+b");
 
-   		encadeamentoExterior(clientes, hash);
+   		//encadeamentoExterior(clientes, hash);
 	}
 
 }

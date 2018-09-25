@@ -27,6 +27,7 @@ void imprimeHash();
 void encadeamentoExterior(FILE* clientes, FILE *hash);
 void setaProximo(int indice, int posicao, FILE* clientes);
 int removeCliente(int codigo);
+void percorreListaDel(int next, int atual, int codigo, FILE* clientes);
 int insereCliente(Cliente* clt);
 void criaTeste(FILE* clientes);
 void desfazLigacoes(FILE* clientes);
