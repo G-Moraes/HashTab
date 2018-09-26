@@ -8,25 +8,20 @@ int main ()
 	int opcao;
 
 	printf("Bem-vindo ao trabalho. O que deseja?\n\n");	
-	printf("0: Criar arquivos vazios\n1: Criar arquivo base clientes e hash\n2: imprimir arquivo clientes\n3: imprimir tabela hash\n");
-	printf("4: Inserir cliente\n5: Remover clientes\n6: Desfazer ligações dos clientes e refazer tabela hash\n7: Aplicar o encadeamento exterior\n\n");
+	printf("1: Criar arquivos vazios\n2: imprimir arquivo cliente\n3: imprimir tabela hash\n");
+	printf("4: Inserir cliente\n5: Remover cliente\n6: Buscar cliente\n\n");
 	scanf("%d", &opcao);
 	printf("\n");
 	
-	if(opcao == 0){
+	if(opcao == 1){
 		
 		FILE* clientes = fopen("clientes.dat", "w+b");
     	setHash();
-	}
-
-	else if(opcao == 1){
-
-		FILE* clientes = fopen("clientes.dat", "w+b");
-		criaTeste(clientes);
-		printf("Arquivo criado com sucesso.\n");
+    	printf("Arquivos zerados!\n\n");
 	}
 
 	else if(opcao == 2){
+		
 		FILE* clientes = fopen("clientes.dat", "r+b");
 		imprimeArquivo(clientes);
 	}
@@ -42,8 +37,9 @@ int main ()
 		int codigo;
 		char nome[100];
 
-		printf("Digite código e nome do cliente:\n");
+		printf("Digite código e nome do cliente:\n\n");
 		scanf("%d %[^\n]", &codigo, nome);
+		printf("\n");
 		usuario = criaCliente(codigo, nome);
 		insereCliente(usuario);
 	}
@@ -52,28 +48,20 @@ int main ()
 
 		int codigo;
 
-		printf("Digite o código do cliente a ser deletado:\n");
+		printf("Digite o código do cliente a ser deletado:\n\n");
 		scanf("%d", &codigo);
+		printf("\n");
 		removeCliente(codigo);
 	}
 
 	else if(opcao == 6){
 
-		FILE* clientes = fopen("clientes.dat", "r+b");
+		int codigo;
 
-		//desfazLigacoes(clientes);
-		setHash();
-
-		printf("Ligações desfeitas e tabela hash refeita.\n");
+		printf("Digite o código do cliente a ser buscado:\n\n");
+		scanf("%d", &codigo);
+		printf("\n");
+		busca(codigo);
 	}
-
-	else if(opcao == 7){
-
-		FILE* clientes = fopen("clientes.dat", "r+b");
-   		FILE* hash = fopen("tabHash.dat", "r+b");
-
-   		//encadeamentoExterior(clientes, hash);
-	}
-
 }
 
