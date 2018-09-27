@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "empregado.h"
-
+#include "cliente.h"
+#include "compartimento_hash.h"
 
 int main ()
 {
